@@ -8,6 +8,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace MTGATool
 {
@@ -20,28 +22,44 @@ namespace MTGATool
 
         private void button1_Click_1(object sender, EventArgs e)
         {
+            Data data = new Data();
             int size = -1;
+            int index = 0;
+
             DialogResult result = openFileDialog1.ShowDialog(); // Show the dialog.
             if (result == DialogResult.OK) // Test result.
             {
                 string file = openFileDialog1.FileName;
                 try
                 {
-                    string text = File.ReadAllText(file);
-                    size = text.Length;
-                    int index = text.IndexOf("\"constructedMatchesWon\": ");
-                    size = index;
-                    label2.Text = text.Substring(index + 25, 2);
-                    index = text.IndexOf("\"constructedMatchesLost\": ");
-                    label3.Text = text.Substring(index + 26, 2);
-                    index = text.IndexOf("\"limitedMatchesWon\": ");
-                    label7.Text = text.Substring(index + 21, 2);
-                    index = text.IndexOf("\"limitedMatchesLost\": ");
-                    label6.Text = text.Substring(index + 22, 2);
+                    string json = "";
+                    var x = 0;
+                    foreach (var line in File.ReadAllLines(file))
+                    {
+                        if (line.Contains(@"<== Event.GetCombinedRankInfo(11)"))
+                        {
+                            x = index + 22;
+                        }
+                        else if (x > 0 & index < x)
+                        {
+                            json += line;
+                        }
+                        else if (x > 0 & index == x)
+                        {
+                            data = JsonConvert.DeserializeObject<Data>(json);
+                            break;
+                        }
+                        index++;
+                    }
+                    
+                    label2.Text = data.constructedMatchesWon.ToString();
+                    label3.Text = data.constructedMatchesLost.ToString();
+                    label7.Text = data.limitedMatchesWon.ToString();
+                    label6.Text = data.limitedMatchesLost.ToString();
 
-                    double contructedPercentage = Math.Round(Convert.ToDouble(label2.Text) / (Convert.ToDouble(label3.Text) + Convert.ToDouble(label2.Text))*10000)/100;
+                    double contructedPercentage = Math.Round(Convert.ToDouble(data.constructedMatchesWon) / (Convert.ToDouble(data.constructedMatchesLost) + Convert.ToDouble(data.constructedMatchesWon))*10000)/100;
                     label4.Text = contructedPercentage.ToString();
-                    double limitedPercentage = Math.Round(Convert.ToDouble(label7.Text) / (Convert.ToDouble(label7.Text) + Convert.ToDouble(label6.Text))*10000)/100;
+                    double limitedPercentage = Math.Round(Convert.ToDouble(data.limitedMatchesWon) / (Convert.ToDouble(data.limitedMatchesWon) + Convert.ToDouble(data.limitedMatchesLost))*10000)/100;
                     label5.Text = limitedPercentage.ToString();
                 }
                 catch (IOException)
